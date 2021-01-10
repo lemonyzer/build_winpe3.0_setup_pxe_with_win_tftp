@@ -72,6 +72,8 @@ imagex /unmount %PEPath%\mount
 echo.
 echo FIX: copy %TFTPPath%\pxeboot.n12 to pxeboot.0
 copy %TFTPPath%\pxeboot.n12 %TFTPPath%\pxeboot.0
+echo FIX: copy %TFTPPath%\bootmgr.exe to %TFTPPath%\..\bootmgr.exe 
+copy %TFTPPath%\bootmgr.exe %TFTPPath%\..\bootmgr.exe
 pause
 goto :exit
 
