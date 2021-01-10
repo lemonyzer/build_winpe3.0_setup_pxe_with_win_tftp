@@ -1,6 +1,9 @@
 @echo off
 cls
 
+echo run this script in WAIK - Start the Deployment tools command prompt.
+pause
+
 REM Variables
 echo Setting variables ...
 REM the path to your WAIK installation
@@ -13,6 +16,10 @@ set PEPath=C:\winpe_%ARCH%
 echo Set temporary working directory for Windows PE to %PEPath%.
 set TFTPPath=C:\tftp\Boot
 echo Set TFTP boot directory to %TFTPPath%.
+REM Don't change this one!
+REM FIX: winpe.wim needs same name as in BCD osdevice setted 
+set WIMFileName=winpe_%ARCH%.wim
+echo Set WIM-Filename to %WIMFileName%.
 REM Don't change this one!
 set BCDStore=%TFTPPath%\BCD
 echo Set BCD store to %BCDStore%.
@@ -37,12 +44,14 @@ echo Starting real work now ...
 cd "%WAIKPath%\Tools\PETools"
 echo Copying PE-Files ...
 call copype %ARCH% %PEPath%
+REM FIX: rename winpe.wim to target-name %WIMFileName%
+move %PEPath%\winpe.wim %PEPath%\%WIMFileName% > NUL
 echo Mounting Windows PE image ...
-imagex /mountrw %PEPath%\winpe.wim 1 %PEPath%\mount
+imagex /mountrw %PEPath%\%WIMFileName% 1 %PEPath%\mount
 md %TFTPPath% > NUL
 copy %PEPath%\mount\Windows\Boot\PXE\*.* %TFTPPath% > NUL
 copy "%WAIKPath%\Tools\PETools\%ARCH%\boot\boot.sdi" %TFTPPath% > NUL
-copy %PEPath%\winpe.wim %TFTPPath% > NUL
+copy %PEPath%\%WIMFileName% %TFTPPath% > NUL
 cd %PEPath%\mount\Windows\System32
 bcdedit -createstore %BCDStore%
 bcdedit -store %BCDStore% -create {ramdiskoptions} /d "Ramdisk options"
@@ -52,14 +61,17 @@ for /f "Tokens=3" %%i in ('bcdedit /store %BCDStore% /create /d "Windows 7 Insta
 bcdedit -store %BCDStore% -set %GUID% systemroot \Windows
 bcdedit -store %BCDStore% -set %GUID% detecthal Yes
 bcdedit -store %BCDStore% -set %GUID% winpe Yes
-bcdedit -store %BCDStore% -set %GUID% osdevice ramdisk=[boot]\Boot\boot.wim,{ramdiskoptions}
-bcdedit -store %BCDStore% -set %GUID% device ramdisk=[boot]\Boot\boot.wim,{ramdiskoptions}
+bcdedit -store %BCDStore% -set %GUID% osdevice ramdisk=[boot]\Boot\%WIMFileName%,{ramdiskoptions}
+bcdedit -store %BCDStore% -set %GUID% device ramdisk=[boot]\Boot\%WIMFileName%,{ramdiskoptions}
 bcdedit -store %BCDStore% -create {bootmgr} /d "Windows 7 Boot Manager"
 bcdedit -store %BCDStore% -set {bootmgr} timeout 30
 bcdedit -store %BCDStore% -set {bootmgr} displayorder %GUID%
 bcdedit -store %BCDStore%
 cd c:\
 imagex /unmount %PEPath%\mount
+echo.
+echo FIX: copy %TFTPPath%\pxeboot.n12 to pxeboot.0
+copy %TFTPPath%\pxeboot.n12 %TFTPPath%\pxeboot.0
 pause
 goto :exit
 
