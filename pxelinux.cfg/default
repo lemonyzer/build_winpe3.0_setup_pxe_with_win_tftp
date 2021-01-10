@@ -1,0 +1,10 @@
+
+menu hshift 13
+menu width 49
+menu margin 8
+
+default winpe
+
+LABEL winpe 
+MENU LABEL WinPE 3.0
+KERNEL boot/pxeboot.0 
